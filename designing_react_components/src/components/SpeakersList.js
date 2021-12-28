@@ -1,40 +1,56 @@
 import Speaker from "./Speaker";
+import ReactPlaceHolder from 'react-placeholder';
+import useRequestDelay, {REQUEST_STATUS} from "../hooks/useRequestDelay";
 import { data } from "../../SpeakerData";
-import { useState } from "react";
+
 
 const SpeakersList = ({showSessions}) => {
-    const [speakersData, setSpeakersData] = useState(data);
-    const onFavoriteToggle = (id) => {
-        const speakerRecPrevious = speakersData.find((rec) => {
-            return rec.id === id;
-        });
-        const speakerRecUpdated = {
-            ...speakerRecPrevious,
-            favorite: !speakerRecPrevious.favorite
-        };
-        const speakersDataNew = speakersData.map((rec) => {
-            return rec.id === id ? speakerRecUpdated : rec;
-        });
 
-        setSpeakersData(speakersDataNew);
-    };
+    const {
+        data: speakersData, 
+        requestStatus, 
+        error, 
+        updateRecord
+    } = useRequestDelay(2000, data);
+
+    
+
+    if(requestStatus === REQUEST_STATUS.FAILURE){
+        return (
+            <div className="text-danger">
+                ERROR: <b>loading Speaker Data Failed {error}</b>
+            </div>
+        );
+    }
+
+
 
     return (
         <div className="container speakers-list">
-            <div className="row">
-                {speakersData.map((speaker) => {
-                    return (
-                        <Speaker 
-                            key={speaker.id}
-                            speaker={speaker}
-                            showSessions={showSessions}
-                            onFavoriteToggle={() => {
-                                onFavoriteToggle(speaker.id)
-                            }}
-                        />
-                    );
-                })}
-            </div>
+            <ReactPlaceHolder 
+                type="media"
+                rows={15}
+                className="speakerslist-placeholder"
+                ready={requestStatus === REQUEST_STATUS.SUCCESS}
+            >
+                <div className="row">
+                    {speakersData.map((speaker) => {
+                        return (
+                            <Speaker 
+                                key={speaker.id}
+                                speaker={speaker}
+                                showSessions={showSessions}
+                                onFavoriteToggle={(doneCallback) => {
+                                    updateRecord({
+                                        ...speaker,
+                                        favorite: !speaker.favorite
+                                    }, doneCallback);
+                                }}
+                            />
+                        );
+                    })}
+                </div>
+            </ReactPlaceHolder>
         </div>
     );
 };
